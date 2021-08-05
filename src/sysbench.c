@@ -32,7 +32,7 @@
 # include <strings.h>
 #endif
 
-#ifdef HAVE_UNISTD_H 
+#ifdef HAVE_UNISTD_H
 # include <unistd.h>
 # include <sys/types.h>
 #endif
@@ -312,6 +312,13 @@ void sb_report_cumulative(sb_stat_t *stat)
   else
     log_text(LOG_NOTICE, "         percentile stats:               disabled");
 
+  log_text(LOG_NOTICE, "         25pct: %37.3f",
+           SEC2MS(stat->latency_25pct));
+  log_text(LOG_NOTICE, "         median: %36.3f",
+           SEC2MS(stat->latency_50pct));
+  log_text(LOG_NOTICE, "         75pct: %37.3f",
+           SEC2MS(stat->latency_75pct));
+
   log_text(LOG_NOTICE, "         sum: %39.3f",
            SEC2MS(stat->latency_sum));
   log_text(LOG_NOTICE, "");
@@ -377,6 +384,13 @@ static void checkpoint(sb_stat_t *stat)
   report_get_common_stat(stat, cnt);
 
   stat->time_interval = NS2SEC(sb_timer_current(&sb_checkpoint_timer));
+
+  stat->latency_25pct =
+    MS2SEC(sb_histogram_get_pct(&sb_latency_histogram, 25.0, true));
+  stat->latency_50pct =
+    MS2SEC(sb_histogram_get_pct(&sb_latency_histogram, 50.0, false));
+  stat->latency_75pct =
+    MS2SEC(sb_histogram_get_pct(&sb_latency_histogram, 75.0, false));
 
   stat->latency_pct =
     MS2SEC(sb_histogram_get_pct_checkpoint(&sb_latency_histogram,
@@ -471,7 +485,7 @@ void print_help(void)
 {
   sb_list_item_t *pos;
   sb_test_t      *test;
-  
+
   printf("Usage:\n");
   printf("  sysbench [options]... [testname] [command]\n\n");
   printf("Commands implemented by most tests: prepare run cleanup help\n\n");
@@ -657,7 +671,7 @@ void print_run_mode(sb_test_t *test)
 
   if (sb_globals.debug)
     log_text(LOG_NOTICE, "Debug mode enabled.\n");
-  
+
   if (sb_globals.validate)
     log_text(LOG_NOTICE, "Validation checks: on.\n");
 
@@ -678,7 +692,7 @@ void print_run_mode(sb_test_t *test)
   if (sb_globals.force_shutdown)
     log_text(LOG_NOTICE, "Forcing shutdown in %u seconds",
              (unsigned) NS2SEC(sb_globals.max_time_ns) + sb_globals.timeout);
-  
+
   log_text(LOG_NOTICE, "");
 
   if (test->ops.print_mode != NULL)
@@ -1066,7 +1080,7 @@ static int run_test(sb_test_t *test)
   /* initialize test */
   if (test->ops.init != NULL && test->ops.init() != 0)
     return 1;
-  
+
   /* print test mode */
   print_run_mode(test);
 
@@ -1301,7 +1315,7 @@ static int init(void)
   sb_globals.threads = sb_get_value_int("threads");
 
   thread_init_timeout = sb_get_value_int("thread-init-timeout");
-  
+
   if (sb_globals.threads <= 0)
   {
     log_text(LOG_FATAL, "Invalid value for --threads: %d.\n",
@@ -1345,7 +1359,7 @@ static int init(void)
     else if (strcasecmp(tmp, "off"))
     {
       char *endptr;
-    
+
       sb_globals.force_shutdown = 1;
       sb_globals.timeout = (unsigned) strtol(tmp, &endptr, 10);
       if (*endptr == '%')
@@ -1373,7 +1387,7 @@ static int init(void)
     if (opt != NULL)
       set_option(opt->name, "5", opt->type);
   }
-  
+
   sb_globals.validate = sb_get_value_flag("validate");
 
   if (sb_rand_init())
@@ -1473,7 +1487,7 @@ int main(int argc, char *argv[])
     printf("%s\n", VERSION_STRING);
     return EXIT_SUCCESS;
   }
-  
+
   /* Initialize global variables and logger */
   if (init() || log_init() || sb_counters_init())
     return EXIT_FAILURE;

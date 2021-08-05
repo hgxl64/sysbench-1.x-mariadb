@@ -99,6 +99,7 @@ double sb_histogram_get_pct_intermediate(sb_histogram_t *h, double percentile);
   percentile value from the cumulative array.
 */
 double sb_histogram_get_pct_cumulative(sb_histogram_t *h, double percentile);
+double sb_histogram_get_pct(sb_histogram_t *h, double percentile, bool cumulative);
 
 /*
    Similar to sb_histogram_get_pct_cumulative(), but also resets cumulative

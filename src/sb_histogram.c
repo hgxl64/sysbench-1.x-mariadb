@@ -45,7 +45,7 @@
    Number of slots for current histogram array. TODO: replace this constant with
    some autodetection code based on the number of available cores or some such.
 */
-#define SB_HISTOGRAM_NSLOTS 128
+#define SB_HISTOGRAM_NSLOTS 256
 
 /* Global latency histogram */
 sb_histogram_t sb_latency_histogram CK_CC_CACHELINE;
@@ -252,6 +252,31 @@ double sb_histogram_get_pct_cumulative(sb_histogram_t *h, double percentile)
   pthread_rwlock_wrlock(&h->lock);
 
   merge_intermediate_into_cumulative(h);
+
+  res = get_pct_cumulative(h, percentile);
+
+  pthread_rwlock_unlock(&h->lock);
+
+  return res;
+}
+
+
+double sb_histogram_get_pct(sb_histogram_t *h, double percentile, bool cumulative)
+{
+  double res;
+
+  /*
+    This can be called concurrently with other sb_histogram_get_pct_*()
+    functions, so use the lock to protect shared structures. This will not block
+    sb_histogram_update() calls, but we make sure we don't lose any concurrent
+    increments by atomically fetching each array element and replacing it with
+    0.
+  */
+  pthread_rwlock_wrlock(&h->lock);
+
+  if (cumulative) {
+      merge_intermediate_into_cumulative(h);
+  }
 
   res = get_pct_cumulative(h, percentile);
 

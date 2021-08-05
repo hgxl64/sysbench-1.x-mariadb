@@ -25,7 +25,7 @@
 # include <string.h>
 # include <stdbool.h>
 #endif
-#ifdef HAVE_UNISTD_H 
+#ifdef HAVE_UNISTD_H
 # include <unistd.h>
 # include <sys/types.h>
 #endif
@@ -45,7 +45,7 @@
 #include "tests/sb_mutex.h"
 
 /* Macros to control global execution mutex */
-#define SB_THREAD_MUTEX_LOCK() pthread_mutex_lock(&sb_globals.exec_mutex) 
+#define SB_THREAD_MUTEX_LOCK() pthread_mutex_lock(&sb_globals.exec_mutex)
 #define SB_THREAD_MUTEX_UNLOCK() pthread_mutex_unlock(&sb_globals.exec_mutex)
 
 /* Maximum number of elements in --report-checkpoints list */
@@ -92,6 +92,10 @@ typedef struct {
   double   time_total;          /* Time elapsed since the benchmark start */
 
   double   latency_pct;         /* Latency percentile */
+
+  double   latency_25pct;       /* Latency 25, 50 and 75 percentile */
+  double   latency_50pct;       /* (cumulative reports only) */
+  double   latency_75pct;
 
   double   latency_min;         /* Minimum latency (cumulative reports only) */
   double   latency_max;         /* Maximum latency (cumulative reports only) */
@@ -158,7 +162,7 @@ typedef struct
   sb_op_thread_run      *thread_run;      /* main thread loop */
   sb_op_thread_done     *thread_done;     /* thread finalize function */
   sb_op_cleanup         *cleanup;         /* called after exit from thread,
-                                             but before timers stop */ 
+                                             but before timers stop */
   sb_op_done            *done;            /* finalize function */
 } sb_operations_t;
 

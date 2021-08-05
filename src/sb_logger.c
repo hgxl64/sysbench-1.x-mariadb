@@ -44,18 +44,18 @@
 
 /*
    Use 1024-element array for latency histogram tracking values between 0.001
-   milliseconds and 100 seconds.
+   milliseconds and 10 seconds.
 */
 #define OPER_LOG_GRANULARITY 1024
 #define OPER_LOG_MIN_VALUE   1e-3
-#define OPER_LOG_MAX_VALUE   1E5
+#define OPER_LOG_MAX_VALUE   1E4
 
 /* Array of message handlers (one chain per message type) */
 
 static sb_list_t handlers[LOG_MSG_TYPE_MAX];
 
 /* set after logger initialization */
-static unsigned char initialized; 
+static unsigned char initialized;
 
 static pthread_mutex_t text_mutex;
 static unsigned int    text_cnt;
@@ -173,8 +173,8 @@ int log_init(void)
   }
 
   /* required to let log_text() pass messages to handlers */
-  initialized = 1; 
-  
+  initialized = 1;
+
   return 0;
 }
 
@@ -199,7 +199,7 @@ void log_done(void)
   }
 
   initialized = 0;
-}  
+}
 
 
 /* Add handler for a specified type of messages */
@@ -212,7 +212,7 @@ int log_add_handler(log_msg_type_t type, log_handler_t *handler)
 
   if (handler->args != NULL)
     sb_register_arg_set(handler->args);
-  
+
   SB_LIST_ADD_TAIL(&handler->listitem, handlers + type);
 
   return 0;
@@ -226,7 +226,7 @@ void log_msg(log_msg_t *msg)
 {
   sb_list_item_t  *pos;
   log_handler_t   *handler;
-  
+
   SB_LIST_FOR_EACH(pos, handlers + msg->type)
   {
     handler = SB_LIST_ENTRY(pos, log_handler_t, listitem);
@@ -404,7 +404,7 @@ int text_handler_init(void)
   /* Set stdout to unbuffered mode */
   setvbuf(stdout, NULL, _IONBF, 0);
 #endif
-  
+
   sb_globals.verbosity = sb_get_value_int("verbosity");
 
   if (sb_globals.verbosity > LOG_DEBUG)
@@ -416,7 +416,7 @@ int text_handler_init(void)
   pthread_mutex_init(&text_mutex, NULL);
   text_cnt = 0;
   text_buf[0] = '\0';
-  
+
   return 0;
 }
 
