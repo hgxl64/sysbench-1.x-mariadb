@@ -44,11 +44,11 @@
 
 /*
    Use 1024-element array for latency histogram tracking values between 0.001
-   milliseconds and 10 seconds.
+   milliseconds and 100 seconds.
 */
 #define OPER_LOG_GRANULARITY 1024
 #define OPER_LOG_MIN_VALUE   1e-3
-#define OPER_LOG_MAX_VALUE   1E4
+#define OPER_LOG_MAX_VALUE   1E5
 
 /* Array of message handlers (one chain per message type) */
 

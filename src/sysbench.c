@@ -312,11 +312,11 @@ void sb_report_cumulative(sb_stat_t *stat)
   else
     log_text(LOG_NOTICE, "         percentile stats:               disabled");
 
-  log_text(LOG_NOTICE, "         25pct: %37.3f",
+  log_text(LOG_NOTICE, "\n         25pct: %37.3f",
            SEC2MS(stat->latency_25pct));
   log_text(LOG_NOTICE, "         median: %36.3f",
            SEC2MS(stat->latency_50pct));
-  log_text(LOG_NOTICE, "         75pct: %37.3f",
+  log_text(LOG_NOTICE, "         75pct: %37.3f\n",
            SEC2MS(stat->latency_75pct));
 
   log_text(LOG_NOTICE, "         sum: %39.3f",
@@ -386,11 +386,11 @@ static void checkpoint(sb_stat_t *stat)
   stat->time_interval = NS2SEC(sb_timer_current(&sb_checkpoint_timer));
 
   stat->latency_25pct =
-    MS2SEC(sb_histogram_get_pct(&sb_latency_histogram, 25.0, true));
+    MS2SEC(sb_histogram_get_pct_cumulative(&sb_latency_histogram, 25.0));
   stat->latency_50pct =
-    MS2SEC(sb_histogram_get_pct(&sb_latency_histogram, 50.0, false));
+    MS2SEC(sb_histogram_get_pct_cumulative(&sb_latency_histogram, 50.0));
   stat->latency_75pct =
-    MS2SEC(sb_histogram_get_pct(&sb_latency_histogram, 75.0, false));
+    MS2SEC(sb_histogram_get_pct_cumulative(&sb_latency_histogram, 75.0));
 
   stat->latency_pct =
     MS2SEC(sb_histogram_get_pct_checkpoint(&sb_latency_histogram,

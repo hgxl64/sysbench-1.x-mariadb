@@ -223,6 +223,7 @@ static double get_pct_cumulative(sb_histogram_t *h, double percentile)
 {
   size_t   i;
   uint64_t ncur, nmax;
+  double   est = 0;
 
   nmax = floor(h->cumulative_nevents * percentile / 100 + 0.5);
 
@@ -234,7 +235,11 @@ static double get_pct_cumulative(sb_histogram_t *h, double percentile)
       break;
   }
 
-  return exp(i / h->range_mult + h->range_deduct);
+  if (i>0) {
+      // uint64_t n = h->cumulative_array[i-1] + h->cumulative_array[i];
+      est = i - ((double)(ncur-nmax))/h->cumulative_array[i];
+  }
+  return exp(est / h->range_mult + h->range_deduct);
 }
 
 
@@ -252,31 +257,6 @@ double sb_histogram_get_pct_cumulative(sb_histogram_t *h, double percentile)
   pthread_rwlock_wrlock(&h->lock);
 
   merge_intermediate_into_cumulative(h);
-
-  res = get_pct_cumulative(h, percentile);
-
-  pthread_rwlock_unlock(&h->lock);
-
-  return res;
-}
-
-
-double sb_histogram_get_pct(sb_histogram_t *h, double percentile, bool cumulative)
-{
-  double res;
-
-  /*
-    This can be called concurrently with other sb_histogram_get_pct_*()
-    functions, so use the lock to protect shared structures. This will not block
-    sb_histogram_update() calls, but we make sure we don't lose any concurrent
-    increments by atomically fetching each array element and replacing it with
-    0.
-  */
-  pthread_rwlock_wrlock(&h->lock);
-
-  if (cumulative) {
-      merge_intermediate_into_cumulative(h);
-  }
 
   res = get_pct_cumulative(h, percentile);
 
@@ -317,8 +297,12 @@ double sb_histogram_get_pct_checkpoint(sb_histogram_t *h,
 void sb_histogram_print(sb_histogram_t *h)
 {
   uint64_t maxcnt;
+  uint64_t ncur=0;
   int      width;
   size_t   i;
+  double   x;
+  double   sumx=0;
+  double   sumx2=0;
 
   pthread_rwlock_wrlock(&h->lock);
 
@@ -336,20 +320,31 @@ void sb_histogram_print(sb_histogram_t *h)
   if (maxcnt == 0)
     return;
 
-  printf("       value  ------------- distribution ------------- count\n");
+  printf("       value  ------------- distribution ------------- count ----- percentile\n");
 
   for (i = 0; i < h->array_size; i++)
   {
     if (array[i] == 0)
       continue;
 
-    width = floor(array[i] * (double) 40 / maxcnt + 0.5);
+    width  = floor(array[i] * (double) 40 / maxcnt + 0.5);
+    ncur  += array[i];
+    x      = exp(i / h->range_mult + h->range_deduct);
+    sumx  += array[i]*x;
+    sumx2 += array[i]*x*x;
 
-    printf("%12.3f |%-40.*s %lu\n",
-           exp(i / h->range_mult + h->range_deduct),          /* value */
+    printf("%12.3f |%-40.*s %-11lu %10.1f\n",
+           x,                                                 /* value */
            width, "****************************************", /* distribution */
-           (unsigned long) array[i]);                /* count */
+           (unsigned long) array[i],                          /* count */
+           (double) 100 * ncur / h->cumulative_nevents        /* percentile */
+          );
   }
+
+  printf("\nHistogram latency (avg/stddev): %.3f / %.3f\n",
+         sumx / h->cumulative_nevents,
+         sqrt((sumx2 - (sumx * sumx / h->cumulative_nevents)) / (h->cumulative_nevents-1))
+        );
 
   pthread_rwlock_unlock(&h->lock);
 }
