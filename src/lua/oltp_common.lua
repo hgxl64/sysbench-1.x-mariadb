@@ -78,7 +78,9 @@ sysbench.cmdline.options = {
           "PostgreSQL driver. The only currently supported " ..
           "variant is 'redshift'. When enabled, " ..
           "create_secondary is automatically disabled, and " ..
-          "delete_inserts is set to 0"}
+          "delete_inserts is set to 0"},
+   bulk_load =
+      {"use extensions for bulk loading, like mysqldump does", false}
 }
 
 -- Prepare the dataset. This command supports parallel execution, i.e. will
@@ -287,6 +289,11 @@ function prepare_commit()
 end
 
 function prepare_for_each_table(key)
+   if drv:name() == "mysql" and sysbench.opt.bulk_load
+   then
+      con:query("SET autocommit=0, unique_checks=0, foreign_key_checks=0")
+   end
+
    for t = 1, sysbench.opt.tables do
       stmt[t][key] = con:prepare(string.format(stmt_defs[key][1], t))
 
@@ -315,6 +322,11 @@ function prepare_for_each_table(key)
       if nparam > 0 then
          stmt[t][key]:bind_param(unpack(param[t][key]))
       end
+   end
+
+   if drv:name() == "mysql" and sysbench.opt.bulk_load
+   then
+      con:query("SET autocommit=1, unique_checks=1, foreign_key_checks=1")
    end
 end
 
