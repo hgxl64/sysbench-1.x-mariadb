@@ -24,7 +24,7 @@ require("oltp_common")
 function prepare_statements()
    -- set query mix to 9 selects + 1 update
    sysbench.opt.point_selects=9
-   sysbench.optnon_index_updates=1
+   sysbench.opt.non_index_updates=1
 
    if not sysbench.opt.skip_trx then
       prepare_begin()
